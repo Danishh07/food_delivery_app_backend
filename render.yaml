@@ -24,8 +24,6 @@ services:
     dockerContext: ./user_service
     plan: free
     region: ohio
-    buildCommand: cd user_service && pip install -r requirements.txt
-    startCommand: cd user_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
@@ -47,8 +45,6 @@ services:
     dockerContext: ./restaurant_service
     plan: free
     region: ohio
-    buildCommand: cd restaurant_service && pip install -r requirements.txt
-    startCommand: cd restaurant_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
@@ -68,8 +64,6 @@ services:
     dockerContext: ./delivery_service
     plan: free
     region: ohio
-    buildCommand: cd delivery_service && pip install -r requirements.txt
-    startCommand: cd delivery_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
