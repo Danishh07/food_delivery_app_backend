@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: food_delivery
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # User Service
+  user_service:
+    build: ./user_service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/food_delivery
+      RESTAURANT_SERVICE_URL: http://restaurant_service:8001
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./user_service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Restaurant Service
+  restaurant_service:
+    build: ./restaurant_service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/food_delivery
+      DELIVERY_SERVICE_URL: http://delivery_service:8002
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./restaurant_service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Delivery Service
+  delivery_service:
+    build: ./delivery_service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/food_delivery
+      RESTAURANT_SERVICE_URL: http://restaurant_service:8001
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./delivery_service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+volumes:
+  postgres_data:

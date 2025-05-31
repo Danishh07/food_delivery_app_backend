@@ -1,0 +1,87 @@
+# Render deployment configuration for Food Delivery App
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: food-delivery-db
+    env: docker
+    plan: standard
+    region: ohio
+    envVars:
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: food-delivery-db
+          property: password
+      - key: POSTGRES_DB
+        value: food_delivery
+
+  # User Service
+  - type: web
+    name: food-delivery-user-service
+    env: docker
+    dockerfilePath: ./user_service/Dockerfile
+    dockerContext: ./user_service
+    plan: free
+    region: ohio
+    buildCommand: cd user_service && pip install -r requirements.txt
+    startCommand: cd user_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: food-delivery-db
+          property: connectionString
+      - key: RESTAURANT_SERVICE_URL
+        value: https://food-delivery-restaurant-service.onrender.com
+      - key: DELIVERY_SERVICE_URL
+        value: https://food-delivery-delivery-service.onrender.com
+      - key: PORT
+        value: 8000
+
+  # Restaurant Service
+  - type: web
+    name: food-delivery-restaurant-service
+    env: docker
+    dockerfilePath: ./restaurant_service/Dockerfile
+    dockerContext: ./restaurant_service
+    plan: free
+    region: ohio
+    buildCommand: cd restaurant_service && pip install -r requirements.txt
+    startCommand: cd restaurant_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: food-delivery-db
+          property: connectionString
+      - key: DELIVERY_SERVICE_URL
+        value: https://food-delivery-delivery-service.onrender.com
+      - key: PORT
+        value: 8001
+
+  # Delivery Service
+  - type: web
+    name: food-delivery-delivery-service
+    env: docker
+    dockerfilePath: ./delivery_service/Dockerfile
+    dockerContext: ./delivery_service
+    plan: free
+    region: ohio
+    buildCommand: cd delivery_service && pip install -r requirements.txt
+    startCommand: cd delivery_service && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: food-delivery-db
+          property: connectionString
+      - key: RESTAURANT_SERVICE_URL
+        value: https://food-delivery-restaurant-service.onrender.com
+      - key: PORT
+        value: 8002
+
+databases:
+  - name: food-delivery-db
+    plan: free
+    region: ohio
